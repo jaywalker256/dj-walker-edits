@@ -1,0 +1,28 @@
+[
+  {
+    "id": "booking-1786699679169",
+    "name": "Kampala Club Promoter",
+    "email": "events@kampala.com",
+    "phone": "0759924353",
+    "eventType": "Club Night / Gig",
+    "eventDate": "2026-08-30",
+    "eventTime": "22:00 - 04:00",
+    "location": "Club Guvnor Kampala",
+    "notes": "VIP Section Opening set",
+    "createdAt": "2026-08-14T09:27:59.169Z",
+    "status": "Pending"
+  },
+  {
+    "id": "booking-1786699659052",
+    "name": "Test User",
+    "email": "test@example.com",
+    "phone": "0759924353",
+    "eventType": "Club Night",
+    "eventDate": "2026-09-01",
+    "eventTime": "",
+    "location": "Kampala",
+    "notes": "Test booking",
+    "createdAt": "2026-08-14T09:27:39.052Z",
+    "status": "Pending"
+  }
+]

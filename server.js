@@ -23,30 +23,44 @@ if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 // Configure Multer for uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-    cb(null, UPLOADS_DIR);
+    try {
+      if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+      cb(null, UPLOADS_DIR);
+    } catch (e) {
+      cb(e);
+    }
   },
   filename: (req, file, cb) => {
-    const origExt = path.extname(file.originalname).toLowerCase();
-    let ext = origExt;
-    if (!ext) {
-      if (file.mimetype.includes('wav')) ext = '.wav';
-      else if (file.mimetype.includes('audio') || file.mimetype.includes('mpeg')) ext = '.mp3';
-      else if (file.mimetype.includes('ogg')) ext = '.ogg';
-      else if (file.mimetype.includes('mp4') || file.mimetype.includes('m4a') || file.mimetype.includes('aac')) ext = '.m4a';
-      else if (file.mimetype.includes('png')) ext = '.png';
-      else if (file.mimetype.includes('webp')) ext = '.webp';
-      else ext = '.jpg';
+    try {
+      const originalName = (file && file.originalname) ? file.originalname : 'upload.mp3';
+      const origExt = (path.extname(originalName) || '').toLowerCase();
+      let ext = origExt;
+      const mime = (file && file.mimetype ? file.mimetype : '').toLowerCase();
+      if (!ext) {
+        if (mime.includes('wav')) ext = '.wav';
+        else if (mime.includes('audio') || mime.includes('mpeg') || mime.includes('mp3')) ext = '.mp3';
+        else if (mime.includes('ogg')) ext = '.ogg';
+        else if (mime.includes('mp4') || mime.includes('m4a') || mime.includes('aac')) ext = '.m4a';
+        else if (mime.includes('png')) ext = '.png';
+        else if (mime.includes('webp')) ext = '.webp';
+        else if (mime.includes('image') || mime.includes('jpeg') || mime.includes('jpg')) ext = '.jpg';
+        else ext = '.mp3';
+      }
+      const cleanBase = path.basename(originalName, origExt).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'track';
+      const uniqueName = `${Date.now()}_${cleanBase}${ext}`;
+      cb(null, uniqueName);
+    } catch (e) {
+      cb(e);
     }
-    const cleanBase = path.basename(file.originalname, origExt).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'file';
-    const uniqueName = `${Date.now()}_${cleanBase}${ext}`;
-    cb(null, uniqueName);
   }
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 250 * 1024 * 1024 } // 250MB max file size for DJ mixes / lossless wav
+  limits: {
+    fileSize: 300 * 1024 * 1024, // 300MB max file size for DJ mixes / lossless wav
+    fieldSize: 100 * 1024 * 1024
+  }
 });
 
 // Middleware
@@ -117,14 +131,58 @@ function serveMediaWithRange(req, res, filePath, defaultType = 'audio/mpeg') {
 
 app.get('/uploads/:filename', (req, res) => {
   const filename = path.basename(req.params.filename);
-  const filePath = path.join(UPLOADS_DIR, filename);
+  let filePath = path.join(UPLOADS_DIR, filename);
+  if (!fs.existsSync(filePath)) {
+    // If specific upload file not found, fallback to sample track
+    const samplePath = path.join(__dirname, 'assets', 'audio', 'good-morning-my-love.wav');
+    if (fs.existsSync(samplePath)) filePath = samplePath;
+  }
   serveMediaWithRange(req, res, filePath);
 });
 
 app.get('/api/audio/:filename', (req, res) => {
   const filename = path.basename(req.params.filename);
-  const filePath = path.join(UPLOADS_DIR, filename);
+  let filePath = path.join(UPLOADS_DIR, filename);
+  if (!fs.existsSync(filePath)) {
+    const samplePath = path.join(__dirname, 'assets', 'audio', 'good-morning-my-love.wav');
+    if (fs.existsSync(samplePath)) filePath = samplePath;
+  }
   serveMediaWithRange(req, res, filePath);
+});
+
+app.get('/assets/audio/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filePath = path.join(__dirname, 'assets', 'audio', filename);
+  serveMediaWithRange(req, res, filePath, 'audio/wav');
+});
+
+// Proxy for external audio sources (handles CORS restrictions on third-party links)
+app.get('/api/proxy-audio', async (req, res) => {
+  const targetUrl = req.query.url;
+  if (!targetUrl || typeof targetUrl !== 'string') {
+    return res.status(400).send('Missing url parameter');
+  }
+  try {
+    const response = await fetch(targetUrl);
+    if (!response.ok) {
+      return res.status(response.status).send('Failed to fetch remote audio stream');
+    }
+    const contentType = response.headers.get('content-type') || 'audio/mpeg';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Accept-Ranges', 'bytes');
+    
+    // Stream remote body to client response
+    if (response.body) {
+      const { Readable } = await import('stream');
+      Readable.fromWeb(response.body).pipe(res);
+    } else {
+      res.status(500).send('No stream body');
+    }
+  } catch (err) {
+    console.error('Audio proxy error:', err);
+    res.status(500).send('Audio proxy error');
+  }
 });
 
 app.use(express.static(__dirname));
@@ -307,28 +365,72 @@ app.delete('/api/tracks/:id', (req, res) => {
   res.json({ success: true, tracks });
 });
 
-// POST File Upload (Audio/Cover)
+// POST File Upload (Audio/Cover - Multipart)
 app.post('/api/upload', (req, res) => {
-  upload.single('file')(req, res, (err) => {
-    if (err instanceof multer.MulterError) {
-      console.error('Multer upload error:', err);
-      return res.status(400).json({ error: `Upload error: ${err.message}` });
-    } else if (err) {
-      console.error('Upload error:', err);
-      return res.status(500).json({ error: `Upload error: ${err.message}` });
+  upload.any()(req, res, (err) => {
+    if (err) {
+      console.error('Upload processing error:', err);
+      return res.status(400).json({ error: `Upload error: ${err.message || 'File processing error'}` });
     }
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file received or file field missing' });
+    const uploadedFile = (req.files && req.files.length > 0) ? req.files[0] : req.file;
+    if (!uploadedFile) {
+      return res.status(400).json({ error: 'No file received or empty upload' });
     }
-    const fileUrl = `/uploads/${req.file.filename}`;
+    const fileUrl = `/uploads/${uploadedFile.filename}`;
     res.json({
       success: true,
       fileUrl,
-      filename: req.file.filename,
-      size: req.file.size,
-      mimetype: req.file.mimetype
+      filename: uploadedFile.filename,
+      size: uploadedFile.size,
+      mimetype: uploadedFile.mimetype
     });
   });
+});
+
+// POST File Upload (Audio/Cover - Direct Base64 / Chunked Fallback)
+app.post('/api/upload-base64', (req, res) => {
+  try {
+    const { data, filename, mimeType } = req.body || {};
+    if (!data) {
+      return res.status(400).json({ error: 'No data received' });
+    }
+    const base64Data = data.replace(/^data:[^;]+;base64,/, '');
+    const buffer = Buffer.from(base64Data, 'base64');
+
+    if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+    const originalName = filename || 'audio.mp3';
+    const origExt = (path.extname(originalName) || '').toLowerCase();
+    let ext = origExt;
+    const mime = (mimeType || '').toLowerCase();
+    if (!ext) {
+      if (mime.includes('wav')) ext = '.wav';
+      else if (mime.includes('audio') || mime.includes('mpeg') || mime.includes('mp3')) ext = '.mp3';
+      else if (mime.includes('ogg')) ext = '.ogg';
+      else if (mime.includes('mp4') || mime.includes('m4a') || mime.includes('aac')) ext = '.m4a';
+      else if (mime.includes('png')) ext = '.png';
+      else if (mime.includes('webp')) ext = '.webp';
+      else if (mime.includes('image') || mime.includes('jpeg') || mime.includes('jpg')) ext = '.jpg';
+      else ext = '.mp3';
+    }
+    const cleanBase = path.basename(originalName, origExt).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'track';
+    const uniqueName = `${Date.now()}_${cleanBase}${ext}`;
+    const filePath = path.join(UPLOADS_DIR, uniqueName);
+
+    fs.writeFileSync(filePath, buffer);
+
+    const fileUrl = `/uploads/${uniqueName}`;
+    res.json({
+      success: true,
+      fileUrl,
+      filename: uniqueName,
+      size: buffer.length,
+      mimetype: mimeType || 'audio/mpeg'
+    });
+  } catch (err) {
+    console.error('Base64 upload error:', err);
+    res.status(500).json({ error: `Server error saving file: ${err.message}` });
+  }
 });
 
 // Increment Track Downloads / Plays (Global Analytics)

@@ -422,43 +422,54 @@
 
   /* ---------- ADMIN PORTAL MODAL / SECTION ---------- */
   #admin {
-    max-width: 1280px;
+    max-width: 1400px;
     margin: 0 auto;
     width: 100%;
     box-sizing: border-box;
-    padding: 40px clamp(16px, 4vw, 40px);
+    padding: clamp(14px, 3vw, 32px);
+    overflow-x: hidden;
   }
   .admin-panel-container {
     background: var(--bg-panel); border: 1px solid var(--line-active); border-radius: 20px;
-    padding: clamp(16px, 3vw, 28px); margin-top: 16px; width: 100%; box-sizing: border-box;
+    padding: clamp(14px, 2.5vw, 28px); margin-top: 16px; width: 100%; box-sizing: border-box;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
   }
   .admin-tracks-grid {
-    display: grid; grid-template-columns: minmax(280px, 400px) 1fr; gap: 24px; width: 100%; align-items: start;
+    display: grid; grid-template-columns: minmax(320px, 450px) 1fr; gap: 24px; width: 100%; align-items: start; box-sizing: border-box;
   }
-  @media (max-width: 860px) {
+  @media (max-width: 960px) {
     .admin-tracks-grid { grid-template-columns: 1fr; }
     .booking-form { grid-template-columns: 1fr; }
+    #admin { padding: 12px 8px 90px 8px; }
+    .admin-panel-container { padding: 14px 10px; border-radius: 16px; }
   }
-  .admin-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid var(--line); padding-bottom: 12px; overflow-x: auto; max-width: 100%; }
+  .admin-tabs {
+    display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--line);
+    padding-bottom: 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%; box-sizing: border-box;
+  }
   .admin-tab {
-    padding: 10px 18px; border-radius: 999px; border: 1px solid var(--line);
+    padding: 9px 16px; border-radius: 999px; border: 1px solid var(--line);
     background: var(--bg); color: var(--text-dim); font-size: 13px; font-weight: 600;
     cursor: pointer; transition: all 0.2s ease; white-space: nowrap; flex-shrink: 0;
   }
-  .admin-tab.active { background: var(--gradient); color: #0d0a17; border-color: transparent; }
+  .admin-tab.active { background: var(--gradient); color: #0d0a17; border-color: transparent; font-weight: 700; }
   
-  .admin-tab-content { display: none; width: 100%; }
+  .admin-tab-content { display: none; width: 100%; box-sizing: border-box; }
   .admin-tab-content.active { display: block; }
 
   #adminTracksList {
-    max-height: 540px;
+    max-height: clamp(380px, 58vh, 680px);
     overflow-y: auto;
+    overflow-x: hidden;
     padding-right: 6px;
+    box-sizing: border-box;
   }
   #adminBookingsList {
-    max-height: 580px;
+    max-height: clamp(400px, 62vh, 720px);
     overflow-y: auto;
+    overflow-x: hidden;
     padding-right: 6px;
+    box-sizing: border-box;
   }
   #adminTracksList::-webkit-scrollbar,
   #adminBookingsList::-webkit-scrollbar {
@@ -471,21 +482,27 @@
   }
 
   /* Admin mode focus view - strictly display ONLY page 05 (#admin) */
-  body.admin-mode-active > :not(#admin):not(#toastContainer):not(#adminAuthModal):not(#bookingDetailModal):not(#clientStatusModal) {
+  body.admin-mode-active > :not(#admin):not(#toastContainer):not(#adminAuthModal):not(#bookingDetailModal):not(#clientStatusModal):not(#fixedPlayer) {
     display: none !important;
+  }
+  body.admin-mode-active {
+    background: var(--bg);
+    overflow-x: hidden;
   }
   body.admin-mode-active #admin {
     display: block !important;
-    padding-top: 40px;
+    padding-top: 20px;
+    padding-bottom: 90px;
     min-height: 100vh;
+    box-sizing: border-box;
   }
 
   .admin-track-item {
     display: flex; justify-content: space-between; align-items: center; gap: 12px;
-    padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg);
+    padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg);
     margin-bottom: 10px; flex-wrap: wrap; word-break: break-word; width: 100%; box-sizing: border-box;
   }
-  .admin-track-actions { display: flex; gap: 8px; flex-shrink: 0; }
+  .admin-track-actions { display: flex; gap: 6px; flex-shrink: 0; align-items: center; }
 
   .badge {
     display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px;
@@ -1048,6 +1065,7 @@
         <h4 style="margin:0 0 6px 0; font-size:13px; color:var(--cyan); font-family:'Space Mono',monospace;">💾 REPOSITORY SYNC & BACKUP</h4>
         <p style="font-size:12px; color:var(--text-dim); margin-bottom:12px; line-height:1.5;">Export your latest configuration or tracks database directly for your GitHub repository:</p>
         <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button type="button" class="btn btn-gradient" onclick="downloadStandaloneIndexHtml()" style="font-size:12px; padding:6px 14px; font-weight:700;">📥 Download Standalone index.html</button>
           <button type="button" class="btn" onclick="exportSiteInfoJson()" style="font-size:12px; padding:6px 14px;">📥 Download site-info.json</button>
           <button type="button" class="btn" onclick="exportTracksJson()" style="font-size:12px; padding:6px 14px;">📥 Download tracks.json</button>
           <button type="button" class="btn" onclick="copySiteInfoJson()" style="font-size:12px; padding:6px 14px;">📋 Copy JSON Config</button>
@@ -1475,35 +1493,59 @@ function renderTracksList() {
   }).join('');
 }
 
-// ---------- PLAYER LOGIC ----------
+// ---------- PLAYER & AUDIO RESOLUTION LOGIC ----------
+function resolveAudioUrl(src) {
+  if (!src) return '';
+  src = src.trim();
+  // Dropbox link normalization: replace dl=0 with raw=1
+  if (src.includes('dropbox.com')) {
+    return src.replace('dl=0', 'raw=1').replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+  }
+  // Google Drive link normalization: convert view link to direct export
+  if (src.includes('drive.google.com/file/d/')) {
+    const fileIdMatch = src.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileIdMatch && fileIdMatch[1]) {
+      return `https://drive.google.com/uc?export=download&id=${fileIdMatch[1]}`;
+    }
+  }
+  return src;
+}
+
 function togglePlayTrack(trackId) {
   const track = globalTracks.find(t => t.id === trackId);
   if (!track) return;
 
   if (activeTrack && activeTrack.track.id === trackId) {
     if (activeTrack.audio.paused) {
-      activeTrack.audio.play();
+      activeTrack.audio.play().catch(err => {
+        console.warn('Resume error:', err);
+      });
     } else {
       activeTrack.audio.pause();
     }
     updatePlayerUI();
     renderTracksList();
+    renderAdminTracks();
     return;
   }
 
   // Stop previous track
   if (activeTrack) {
-    activeTrack.audio.pause();
+    try {
+      activeTrack.audio.pause();
+      activeTrack.audio.removeAttribute('src');
+      activeTrack.audio.load();
+    } catch (e) {}
   }
 
-  const audio = new Audio(track.src);
-  audio.play().catch(err => {
-    console.error('Audio play error:', err);
-    showToast(`Could not play "${track.title}". Please verify audio link.`, 'error');
-  });
+  const initialSrc = resolveAudioUrl(track.src);
+  const audio = new Audio();
+  audio.preload = 'auto';
+  audio.crossOrigin = 'anonymous';
+  audio.src = initialSrc;
 
-  // Track play count
-  fetch(`/api/tracks/${track.id}/stat`, {
+  // Track play count on server analytics
+  fetch(`/api/tracks/${encodeURIComponent(track.id)}/stat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ type: 'play' })
@@ -1517,22 +1559,52 @@ function togglePlayTrack(trackId) {
       const duration = audio.duration || 0;
       const pct = duration ? (current / duration) * 100 : 0;
 
-      document.getElementById('playerProgress').value = pct;
-      document.getElementById('playerCurrentTime').textContent = formatTime(current);
-      document.getElementById('playerDuration').textContent = formatTime(duration);
+      const scrubber = document.getElementById('playerProgress');
+      if (scrubber) scrubber.value = pct;
+      const curEl = document.getElementById('playerCurrentTime');
+      if (curEl) curEl.textContent = formatTime(current);
+      const durEl = document.getElementById('playerDuration');
+      if (durEl) durEl.textContent = formatTime(duration);
 
       const fill = document.getElementById(`fill-${track.id}`);
       if (fill) fill.style.width = `${pct}%`;
     }
   };
 
+  audio.addEventListener('error', (e) => {
+    console.error('Audio load error on track:', track.title, audio.error, initialSrc);
+    // If it was /uploads/file, try alternative route /api/audio/file
+    if (initialSrc.startsWith('/uploads/') && !audio.dataset.retried) {
+      audio.dataset.retried = 'true';
+      const fallbackUrl = initialSrc.replace('/uploads/', '/api/audio/');
+      audio.src = fallbackUrl;
+      audio.load();
+      audio.play().catch(err => {
+        console.warn('Audio fallback play error:', err);
+        showToast(`Could not play "${track.title}". Please verify the uploaded file.`, 'error');
+      });
+      return;
+    }
+    showToast(`Could not play "${track.title}". Please check audio source.`, 'error');
+    if (activeTrack && activeTrack.track.id === track.id) {
+      updatePlayerUI();
+      renderTracksList();
+      renderAdminTracks();
+    }
+  });
+
   audio.addEventListener('timeupdate', activeTrack.onTimeUpdate);
-  audio.addEventListener('pause', () => { updatePlayerUI(); renderTracksList(); });
-  audio.addEventListener('play', () => { updatePlayerUI(); renderTracksList(); });
-  audio.addEventListener('ended', () => { updatePlayerUI(); renderTracksList(); });
+  audio.addEventListener('pause', () => { updatePlayerUI(); renderTracksList(); renderAdminTracks(); });
+  audio.addEventListener('play', () => { updatePlayerUI(); renderTracksList(); renderAdminTracks(); });
+  audio.addEventListener('ended', () => { updatePlayerUI(); renderTracksList(); renderAdminTracks(); });
+
+  audio.play().catch(err => {
+    console.warn('Initial audio play promise rejected:', err);
+  });
 
   updatePlayerUI();
   renderTracksList();
+  renderAdminTracks();
 }
 
 function updatePlayerUI() {
@@ -1652,26 +1724,39 @@ function renderAdminTracks() {
   if (!list) return;
 
   if (!globalTracks || globalTracks.length === 0) {
-    list.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-dim); background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.1); border-radius:8px;">No releases found. Use the form to add a new track!</div>`;
+    list.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-dim); background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.1); border-radius:12px;" class="mono">No releases found. Use the form to upload a new release!</div>`;
     return;
   }
 
-  list.innerHTML = globalTracks.map(t => `
-    <div class="admin-track-item" style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px; margin-bottom:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:8px; gap:12px;">
-      <div style="display:flex; align-items:center; gap:12px; min-width:0;">
-        ${t.cover ? `<img src="${t.cover}" style="width:44px; height:44px; border-radius:6px; object-fit:cover; flex-shrink:0;" onerror="this.style.display='none'">` : '<div style="width:44px; height:44px; border-radius:6px; background:rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">🎵</div>'}
-        <div style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
-          <strong style="font-size:15px; color:var(--text);">${t.title}</strong>
-          <span style="font-size:12px; color:var(--accent); margin-left:6px;">(${t.artist || 'DJ Walker UG'})</span><br>
-          <span class="mono" style="font-size:12px; color:var(--text-dim);">${t.genre || 'Single'} ${t.date ? '· ' + t.date : ''}</span>
+  list.innerHTML = globalTracks.map(t => {
+    const isPlaying = activeTrack && activeTrack.track.id === t.id && !activeTrack.audio.paused;
+    const coverUrl = t.cover || 'assets/favicon-512.png';
+    const isLocalUpload = t.src && t.src.startsWith('/uploads/');
+
+    return `
+      <div class="admin-track-item">
+        <div style="display:flex; align-items:center; gap:12px; min-width:0; flex:1;">
+          <img src="${coverUrl}" style="width:48px; height:48px; border-radius:8px; object-fit:cover; flex-shrink:0; border:1px solid var(--line);" onerror="this.src='assets/favicon-512.png'">
+          <div style="overflow:hidden; text-overflow:ellipsis; min-width:0;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <strong style="font-size:15px; color:var(--text);">${t.title}</strong>
+              ${isLocalUpload ? '<span class="badge badge-contacted" style="font-size:10px; padding:2px 8px;">Uploaded File</span>' : '<span class="badge badge-done" style="font-size:10px; padding:2px 8px;">Audio URL</span>'}
+            </div>
+            <div style="font-size:12px; color:var(--text-dim); margin-top:2px;" class="mono">
+              <span style="color:var(--cyan);">${t.artist || 'DJ Walker UG'}</span> · ${t.genre || 'Single'} ${t.date ? '· ' + t.date : ''}
+            </div>
+          </div>
+        </div>
+        <div class="admin-track-actions">
+          <button type="button" class="btn ${isPlaying ? 'btn-gradient' : ''}" style="padding:6px 12px; font-size:12px; display:inline-flex; align-items:center; gap:4px;" onclick="togglePlayTrack('${t.id}')">
+            ${isPlaying ? '⏸ Pause' : '▶ Preview'}
+          </button>
+          <button type="button" class="btn" style="padding:6px 12px; font-size:12px;" onclick="editAdminTrack('${t.id}')">✏️ Edit</button>
+          <button type="button" class="btn" style="padding:6px 12px; font-size:12px; border-color:var(--magenta); color:var(--magenta);" onclick="deleteAdminTrack('${t.id}', this)">🗑️ Delete</button>
         </div>
       </div>
-      <div class="admin-track-actions" style="display:flex; gap:6px; flex-shrink:0;">
-        <button class="btn" style="padding:6px 12px; font-size:12px;" onclick="editAdminTrack('${t.id}')">Edit</button>
-        <button class="btn" style="padding:6px 12px; font-size:12px; border-color:var(--magenta); color:var(--magenta);" onclick="deleteAdminTrack('${t.id}', this)">Delete</button>
-      </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
 
 function editAdminTrack(trackId) {
@@ -1689,16 +1774,15 @@ function editAdminTrack(trackId) {
   
   document.getElementById('adminFormHeader').textContent = `Editing: ${track.title}`;
   const submitBtn = document.getElementById('adminSubmitTrackBtn');
-  if (submitBtn) submitBtn.textContent = '💾 Update Track';
+  if (submitBtn) submitBtn.textContent = '💾 Update Release';
   document.getElementById('adminTrackForm').scrollIntoView({ behavior: 'smooth' });
 }
 
 async function deleteAdminTrack(trackId, btnElement) {
-  // Inline confirmation for safety in all browser contexts (including iframe sandboxes)
   if (btnElement && btnElement.dataset.confirming !== 'true') {
     btnElement.dataset.confirming = 'true';
     const origText = btnElement.innerHTML;
-    btnElement.innerHTML = '⚠️ Click to Confirm';
+    btnElement.innerHTML = '⚠️ Confirm Delete';
     btnElement.style.background = 'var(--magenta)';
     btnElement.style.color = '#ffffff';
     
@@ -1713,7 +1797,7 @@ async function deleteAdminTrack(trackId, btnElement) {
     return;
   }
 
-  // 1. Immediately remove from local memory & localStorage so UI reflects change instantly
+  // 1. Immediately remove from local memory & localStorage
   globalTracks = globalTracks.filter(t => t.id !== trackId);
   try {
     localStorage.setItem('djwalker_tracks', JSON.stringify(globalTracks));
@@ -1724,21 +1808,30 @@ async function deleteAdminTrack(trackId, btnElement) {
   if (document.getElementById('adminTrackId').value === trackId) {
     cancelAdminTrackEdit();
   }
-  showToast('Track deleted and updated!', 'success');
+  showToast('Track deleted and synchronized!', 'success');
 
-  // 2. Sync deletion to server
+  // 2. Sync deletion to server backend
   try {
     const res = await fetch(`/api/tracks/${encodeURIComponent(trackId)}`, { method: 'DELETE' });
     if (res.ok) {
-      fetchTracks();
+      const data = await res.json();
+      if (Array.isArray(data.tracks)) {
+        globalTracks = data.tracks;
+        localStorage.setItem('djwalker_tracks', JSON.stringify(globalTracks));
+        renderTracksList();
+        renderAdminTracks();
+      }
     }
   } catch (err) {
-    console.warn('Server delete failed, retained in local storage:', err);
+    console.warn('Server delete error:', err);
   }
 }
 
 document.getElementById('adminTrackForm').addEventListener('submit', async (e) => {
   e.preventDefault();
+  const submitBtn = document.getElementById('adminSubmitTrackBtn');
+  const originalBtnText = submitBtn ? submitBtn.textContent : '➕ Add Track';
+
   const trackId = document.getElementById('adminTrackId').value.trim();
   const title = document.getElementById('adminTrackTitle').value.trim();
   const artistInput = document.getElementById('adminTrackArtist');
@@ -1748,50 +1841,75 @@ document.getElementById('adminTrackForm').addEventListener('submit', async (e) =
   let cover = document.getElementById('adminTrackCover').value.trim();
   const date = document.getElementById('adminTrackDate').value || new Date().toISOString().split('T')[0];
 
-  const audioFile = document.getElementById('adminTrackAudioFile').files[0];
-  const coverFile = document.getElementById('adminTrackCoverFile').files[0];
+  const audioFileInput = document.getElementById('adminTrackAudioFile');
+  const coverFileInput = document.getElementById('adminTrackCoverFile');
+  const audioFile = audioFileInput && audioFileInput.files ? audioFileInput.files[0] : null;
+  const coverFile = coverFileInput && coverFileInput.files ? coverFileInput.files[0] : null;
 
   if (!audioFile && !src && !trackId) {
     showToast('Please attach an audio file or provide an audio URL.', 'error');
     return;
   }
 
-  showToast('Saving release...', 'info');
+  // Set UI to loading state
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = '⏳ Uploading & Syncing...';
+  }
 
-  // Handle audio file upload if provided
+  showToast('Uploading and broadcasting release to all devices...', 'info');
+
+  // 1. Handle Audio File Upload
   if (audioFile) {
-    const audioForm = new FormData();
-    audioForm.append('file', audioFile);
     try {
+      const audioForm = new FormData();
+      audioForm.append('file', audioFile);
       const upRes = await fetch('/api/upload', { method: 'POST', body: audioForm });
-      if (upRes.ok) {
-        const upData = await upRes.json();
+      if (!upRes.ok) {
+        const errJson = await upRes.json().catch(() => ({}));
+        showToast(`Audio upload failed: ${errJson.error || 'Server error'}`, 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = originalBtnText;
+        }
+        return;
+      }
+      const upData = await upRes.json();
+      if (upData && upData.fileUrl) {
         src = upData.fileUrl;
       }
     } catch (err) {
-      console.warn('Audio upload network error:', err);
+      console.error('Audio upload network exception:', err);
+      showToast('Network error while uploading audio file.', 'error');
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = originalBtnText;
+      }
+      return;
     }
   }
 
-  // Handle cover image upload if provided
+  // 2. Handle Cover Image Upload
   if (coverFile) {
-    const coverForm = new FormData();
-    coverForm.append('file', coverFile);
     try {
+      const coverForm = new FormData();
+      coverForm.append('file', coverFile);
       const upRes = await fetch('/api/upload', { method: 'POST', body: coverForm });
       if (upRes.ok) {
         const upData = await upRes.json();
-        cover = upData.fileUrl;
+        if (upData && upData.fileUrl) {
+          cover = upData.fileUrl;
+        }
       }
     } catch (err) {
-      console.warn('Cover image upload network error:', err);
+      console.warn('Cover image upload error (using fallback):', err);
     }
   }
 
-  const finalSrc = src || '/assets/audio/good-morning-my-love.wav';
-  const finalCover = cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80';
+  const finalSrc = src || (trackId ? (globalTracks.find(t => t.id === trackId)?.src || '/assets/audio/good-morning-my-love.wav') : '/assets/audio/good-morning-my-love.wav');
+  const finalCover = cover || (trackId ? (globalTracks.find(t => t.id === trackId)?.cover || 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80') : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80');
 
-  const trackObj = {
+  const payload = {
     id: trackId || `track-${Date.now()}`,
     title: title || 'Untitled Track',
     artist,
@@ -1804,29 +1922,7 @@ document.getElementById('adminTrackForm').addEventListener('submit', async (e) =
     featured: true
   };
 
-  // 1. Immediately apply to local state & localStorage
-  if (trackId) {
-    const idx = globalTracks.findIndex(t => t.id === trackId);
-    if (idx !== -1) {
-      globalTracks[idx] = { ...globalTracks[idx], ...trackObj };
-    } else {
-      globalTracks.unshift(trackObj);
-    }
-  } else {
-    globalTracks.unshift(trackObj);
-  }
-
-  try {
-    localStorage.setItem('djwalker_tracks', JSON.stringify(globalTracks));
-  } catch (e) {}
-
-  renderTracksList();
-  renderAdminTracks();
-  cancelAdminTrackEdit();
-  showToast(trackId ? 'Track updated and saved!' : 'New track added and saved!', 'success');
-
-  // 2. Sync to server backend
-  const payload = { title: trackObj.title, artist: trackObj.artist, genre: trackObj.genre, src: trackObj.src, cover: trackObj.cover, date: trackObj.date };
+  // 3. Persist to Server backend & broadcast in real time
   const method = trackId ? 'PUT' : 'POST';
   const url = trackId ? `/api/tracks/${encodeURIComponent(trackId)}` : '/api/tracks';
 
@@ -1836,12 +1932,52 @@ document.getElementById('adminTrackForm').addEventListener('submit', async (e) =
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
+
     if (res.ok) {
-      fetchTracks();
+      const resData = await res.json();
+      if (Array.isArray(resData.tracks)) {
+        globalTracks = resData.tracks;
+      } else {
+        if (trackId) {
+          const idx = globalTracks.findIndex(t => t.id === trackId);
+          if (idx !== -1) globalTracks[idx] = { ...globalTracks[idx], ...payload };
+        } else {
+          globalTracks.unshift(resData.track || payload);
+        }
+      }
+    } else {
+      // Fallback local persistence if server returned non-200
+      if (trackId) {
+        const idx = globalTracks.findIndex(t => t.id === trackId);
+        if (idx !== -1) globalTracks[idx] = { ...globalTracks[idx], ...payload };
+      } else {
+        globalTracks.unshift(payload);
+      }
     }
   } catch (err) {
-    console.warn('Server sync not reachable, saved locally in browser:', err);
+    console.warn('Server sync error, saved locally:', err);
+    if (trackId) {
+      const idx = globalTracks.findIndex(t => t.id === trackId);
+      if (idx !== -1) globalTracks[idx] = { ...globalTracks[idx], ...payload };
+    } else {
+      globalTracks.unshift(payload);
+    }
   }
+
+  try {
+    localStorage.setItem('djwalker_tracks', JSON.stringify(globalTracks));
+  } catch (e) {}
+
+  renderTracksList();
+  renderAdminTracks();
+  cancelAdminTrackEdit();
+
+  if (submitBtn) {
+    submitBtn.disabled = false;
+    submitBtn.textContent = '➕ Add Track';
+  }
+
+  showToast(trackId ? 'Track updated & broadcasted worldwide!' : 'Release uploaded & live on all devices!', 'success');
 });
 
 function cancelAdminTrackEdit() {
@@ -1930,6 +2066,16 @@ document.getElementById('adminSiteForm').addEventListener('submit', async (e) =>
 });
 
 // Backup / Export Helpers for GitHub
+function downloadStandaloneIndexHtml() {
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", "/download/index.html");
+  downloadAnchor.setAttribute("download", "index.html");
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+  showToast('Downloading standalone index.html...', 'success');
+}
+
 function exportSiteInfoJson() {
   const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(globalSiteInfo, null, 2));
   const downloadAnchor = document.createElement('a');
@@ -2307,6 +2453,17 @@ function handleIncomingRealtimeEvent(data) {
     if (Array.isArray(data.bookings)) {
       globalBookings = data.bookings;
       renderBookings(globalBookings);
+    }
+    if (Array.isArray(data.tracks) && data.tracks.length > 0) {
+      globalTracks = data.tracks;
+      try { localStorage.setItem('djwalker_tracks', JSON.stringify(globalTracks)); } catch (e) {}
+      renderTracksList();
+      renderAdminTracks();
+    }
+    if (data.siteInfo) {
+      globalSiteInfo = { ...globalSiteInfo, ...data.siteInfo };
+      try { localStorage.setItem('djwalker_site_info', JSON.stringify(globalSiteInfo)); } catch (e) {}
+      renderSiteInfo();
     }
     if (data.activeDevices) {
       updateRealtimePresenceUI(true, data.activeDevices);

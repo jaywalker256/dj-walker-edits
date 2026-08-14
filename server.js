@@ -22,33 +22,111 @@ if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 
 // Configure Multer for uploads
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, UPLOADS_DIR),
+  destination: (req, file, cb) => {
+    if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    cb(null, UPLOADS_DIR);
+  },
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    const origExt = path.extname(file.originalname).toLowerCase();
+    let ext = origExt;
+    if (!ext) {
+      if (file.mimetype.includes('wav')) ext = '.wav';
+      else if (file.mimetype.includes('audio') || file.mimetype.includes('mpeg')) ext = '.mp3';
+      else if (file.mimetype.includes('ogg')) ext = '.ogg';
+      else if (file.mimetype.includes('mp4') || file.mimetype.includes('m4a') || file.mimetype.includes('aac')) ext = '.m4a';
+      else if (file.mimetype.includes('png')) ext = '.png';
+      else if (file.mimetype.includes('webp')) ext = '.webp';
+      else ext = '.jpg';
+    }
+    const cleanBase = path.basename(file.originalname, origExt).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'file';
+    const uniqueName = `${Date.now()}_${cleanBase}${ext}`;
     cb(null, uniqueName);
   }
 });
 
 const upload = multer({
   storage,
-  limits: { fileSize: 150 * 1024 * 1024 } // 150MB max file size
+  limits: { fileSize: 250 * 1024 * 1024 } // 250MB max file size for DJ mixes / lossless wav
 });
 
 // Middleware
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Range');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, Accept-Ranges, Content-Length, Content-Type');
   if (req.method === 'OPTIONS') {
     return res.sendStatus(200);
   }
   next();
 });
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use('/uploads', express.static(UPLOADS_DIR));
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+// Range-request enabled audio & media streamer for mobile & desktop players
+function serveMediaWithRange(req, res, filePath, defaultType = 'audio/mpeg') {
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).send('File not found');
+  }
+
+  const stat = fs.statSync(filePath);
+  const fileSize = stat.size;
+  const range = req.headers.range;
+
+  let contentType = defaultType;
+  const ext = path.extname(filePath).toLowerCase();
+  if (ext === '.wav') contentType = 'audio/wav';
+  else if (ext === '.mp3') contentType = 'audio/mpeg';
+  else if (ext === '.m4a' || ext === '.aac') contentType = 'audio/mp4';
+  else if (ext === '.ogg') contentType = 'audio/ogg';
+  else if (ext === '.jpg' || ext === '.jpeg') contentType = 'image/jpeg';
+  else if (ext === '.png') contentType = 'image/png';
+  else if (ext === '.webp') contentType = 'image/webp';
+
+  if (range) {
+    const parts = range.replace(/bytes=/, "").split("-");
+    const start = parseInt(parts[0], 10);
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+    if (start >= fileSize || end >= fileSize) {
+      res.setHeader('Content-Range', `bytes */${fileSize}`);
+      return res.status(416).send('Requested Range Not Satisfiable');
+    }
+    const chunksize = (end - start) + 1;
+    const fileStream = fs.createReadStream(filePath, { start, end });
+    res.writeHead(206, {
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': contentType,
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=31536000'
+    });
+    fileStream.pipe(res);
+  } else {
+    res.writeHead(200, {
+      'Content-Length': fileSize,
+      'Content-Type': contentType,
+      'Accept-Ranges': 'bytes',
+      'Access-Control-Allow-Origin': '*',
+      'Cache-Control': 'public, max-age=31536000'
+    });
+    fs.createReadStream(filePath).pipe(res);
+  }
+}
+
+app.get('/uploads/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filePath = path.join(UPLOADS_DIR, filename);
+  serveMediaWithRange(req, res, filePath);
+});
+
+app.get('/api/audio/:filename', (req, res) => {
+  const filename = path.basename(req.params.filename);
+  const filePath = path.join(UPLOADS_DIR, filename);
+  serveMediaWithRange(req, res, filePath);
+});
+
 app.use(express.static(__dirname));
 
 // JSON File Helper Utilities
@@ -230,12 +308,27 @@ app.delete('/api/tracks/:id', (req, res) => {
 });
 
 // POST File Upload (Audio/Cover)
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
-  }
-  const fileUrl = `/uploads/${req.file.filename}`;
-  res.json({ success: true, fileUrl, filename: req.file.filename });
+app.post('/api/upload', (req, res) => {
+  upload.single('file')(req, res, (err) => {
+    if (err instanceof multer.MulterError) {
+      console.error('Multer upload error:', err);
+      return res.status(400).json({ error: `Upload error: ${err.message}` });
+    } else if (err) {
+      console.error('Upload error:', err);
+      return res.status(500).json({ error: `Upload error: ${err.message}` });
+    }
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file received or file field missing' });
+    }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({
+      success: true,
+      fileUrl,
+      filename: req.file.filename,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
+  });
 });
 
 // Increment Track Downloads / Plays (Global Analytics)
@@ -498,6 +591,15 @@ app.delete('/api/bookings/:id', (req, res) => {
   });
 
   res.json({ success: true, bookings });
+});
+
+// Explicit endpoint to download the standalone index.html
+app.get(['/download/index.html', '/api/download/index.html', '/download'], (req, res) => {
+  res.download(path.join(__dirname, 'index.html'), 'index.html', (err) => {
+    if (err) {
+      res.status(500).send('Error downloading file');
+    }
+  });
 });
 
 // Fallback to index.html for SPA

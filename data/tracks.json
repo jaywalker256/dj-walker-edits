@@ -1,0 +1,50 @@
+[
+  {
+    "id": "track-1",
+    "title": "Good Morning My Love",
+    "artist": "DJ Walker UG",
+    "genre": "Ug Vibes",
+    "src": "/assets/audio/good-morning-my-love.wav",
+    "date": "2026-08-01",
+    "cover": "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+    "downloads": 1820,
+    "plays": 4890,
+    "featured": true
+  },
+  {
+    "id": "track-2",
+    "title": "Pearl of Africa Amapiano",
+    "artist": "DJ Walker UG",
+    "genre": "Amapiano & Ug Vibes",
+    "src": "/assets/audio/pearl-of-africa.wav",
+    "date": "2026-08-05",
+    "cover": "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80",
+    "downloads": 3150,
+    "plays": 7200,
+    "featured": true
+  },
+  {
+    "id": "track-3",
+    "title": "Kampala Club Nonstop Vol 1",
+    "artist": "DJ Walker UG",
+    "genre": "Afrobeats & Dancehall",
+    "src": "/assets/audio/kampala-club-vol1.wav",
+    "date": "2026-08-08",
+    "cover": "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80",
+    "downloads": 5890,
+    "plays": 14400,
+    "featured": true
+  },
+  {
+    "id": "track-4",
+    "title": "Stress Killer Party Mix",
+    "artist": "DJ Walker UG",
+    "genre": "Amapiano & Ug Vibes",
+    "src": "/assets/audio/stress-killer-mix.wav",
+    "date": "2026-08-10",
+    "cover": "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80",
+    "downloads": 7120,
+    "plays": 18800,
+    "featured": true
+  }
+]
